@@ -1,4 +1,5 @@
 streamlit
 pyttsx3
 requests
-speechrecognition 
+speechrecognition
+elevenlabs==1.13.5 

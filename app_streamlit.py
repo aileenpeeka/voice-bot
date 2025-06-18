@@ -4,6 +4,7 @@ import speech_recognition as sr
 import io
 import streamlit.components.v1 as components
 import base64
+from elevenlabs import generate, Voice, set_api_key
 
 # --- ElevenLabs API credentials ---
 ELEVENLABS_API_KEY = st.secrets["ELEVENLABS_API_KEY"]
@@ -293,23 +294,16 @@ st.sidebar.markdown(
 
 # --- ElevenLabs TTS ---
 def elevenlabs_tts(text):
-    url = f"https://api.elevenlabs.io/v1/text-to-speech/{VOICE_ID}"
-    headers = {
-        "xi-api-key": ELEVENLABS_API_KEY,
-        "Content-Type": "application/json"
-    }
-    data = {
-        "text": text,
-        "voice_settings": {
-            "stability": 0.5,
-            "similarity_boost": 0.75
-        }
-    }
-    response = requests.post(url, headers=headers, json=data)
-    if response.status_code == 200:
-        return response.content  # MP3 audio bytes
-    else:
-        st.error(f"ElevenLabs API error: {response.text}")
+    try:
+        set_api_key(ELEVENLABS_API_KEY)
+        audio = generate(
+            text=text,
+            voice=Voice(voice_id=VOICE_ID),
+            model="eleven_monolingual_v1"
+        )
+        return audio  # this is already in byte format
+    except Exception as e:
+        st.error(f"ElevenLabs error: {e}")
         return None
 
 # --- Speech-to-text ---
