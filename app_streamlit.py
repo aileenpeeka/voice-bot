@@ -8,16 +8,22 @@ import sys
 
 print("Python version:", sys.version)
 try:
-    from elevenlabs import generate, Voice, set_api_key
+    from elevenlabs.client import ElevenLabs
     print("ElevenLabs import: SUCCESS")
 except Exception as e:
     print("ElevenLabs import: FAIL", e)
     raise
 
 # --- ElevenLabs API credentials ---
-ELEVENLABS_API_KEY = st.secrets["ELEVENLABS_API_KEY"]
-VOICE_ID = st.secrets["VOICE_ID"]
-API_KEY = st.secrets["API_KEY"]
+try:
+    ELEVENLABS_API_KEY = st.secrets["ELEVENLABS_API_KEY"]
+    VOICE_ID = st.secrets["VOICE_ID"]
+    API_KEY = st.secrets["API_KEY"]
+    print("All API keys loaded successfully")
+except Exception as e:
+    st.error(f"Error loading API keys: {e}")
+    st.error("Please check your Streamlit secrets configuration")
+    st.stop()
 
 
 st.markdown(
@@ -304,13 +310,15 @@ st.sidebar.markdown(
 # --- ElevenLabs TTS ---
 def elevenlabs_tts(text):
     try:
-        set_api_key(ELEVENLABS_API_KEY)
-        audio = generate(
+        client = ElevenLabs(api_key=ELEVENLABS_API_KEY)
+        audio_generator = client.text_to_speech.convert(
             text=text,
-            voice=Voice(voice_id=VOICE_ID),
-            model="eleven_monolingual_v1"
+            voice_id=VOICE_ID,
+            model_id="eleven_monolingual_v1"
         )
-        return audio  # this is already in byte format
+        # Convert generator to bytes
+        audio_bytes = b''.join(audio_generator)
+        return audio_bytes
     except Exception as e:
         st.error(f"ElevenLabs error: {e}")
         return None
@@ -360,7 +368,6 @@ def get_answer(prompt):
                 }
             )
             result = response.json()
-            st.write(result)  # For debugging: show full API response
             if "choices" in result and result["choices"]:
                 return result["choices"][0]["message"]["content"]
             else:
@@ -375,7 +382,7 @@ st.divider()
 
 # --- Question Card ---
 st.markdown("<div class='section-title'>Your Question</div>", unsafe_allow_html=True)
-user_input = st.text_area("", placeholder="Type your question here...", height=80, key="text_input")
+user_input = st.text_area("Question", placeholder="Type your question here...", height=80, key="text_input", label_visibility="collapsed")
 
 # --- Audio Upload Card ---
 st.markdown("<div style='margin-top:10px; font-size:16px;'>Or upload an audio file:</div>", unsafe_allow_html=True)
@@ -401,37 +408,52 @@ if submit and user_input.strip():
         answer = get_answer(user_input)
     response_placeholder.markdown(f"<div class='glass-card response-bubble'>{answer}</div>", unsafe_allow_html=True)
     audio_bytes = elevenlabs_tts(answer)
-    st.session_state['audio_bytes'] = audio_bytes if audio_bytes else None
+    if audio_bytes is not None:
+        # Ensure it's bytes, not a generator
+        if hasattr(audio_bytes, '__iter__') and not isinstance(audio_bytes, bytes):
+            audio_bytes = b''.join(audio_bytes)
+        st.session_state['audio_bytes'] = audio_bytes
+    else:
+        st.session_state['audio_bytes'] = None
 
 # Audio player always visible after submit
 if 'audio_bytes' in st.session_state and st.session_state['audio_bytes']:
-    audio_bytes = st.session_state['audio_bytes']
-    audio_b64 = base64.b64encode(audio_bytes).decode()
-    audio_src = f"data:audio/mp3;base64,{audio_b64}"
-    wavesurfer_html = f'''
-    <div class="audio-glass-card">
-      <div id="waveform"></div>
-      <div style="display:flex;justify-content:center;margin-top:1em;">
-        <button id="playPause" style="background:linear-gradient(90deg,#ff006e,#8338ec);color:#fff;border:none;border-radius:16px;font-size:1.2rem;font-weight:700;padding:0.5em 2em;box-shadow:0 4px 24px #ff006e44;cursor:pointer;">Play/Pause</button>
-      </div>
-    </div>
-    <script src="https://unpkg.com/wavesurfer.js"></script>
-    <script>
-      var wavesurfer = WaveSurfer.create({{
-        container: '#waveform',
-        waveColor: '#8338ec',
-        progressColor: '#ff006e',
-        backgroundColor: 'rgba(26,26,34,0.7)',
-        barWidth: 3,
-        barRadius: 3,
-        height: 80,
-        responsive: true,
-        cursorColor: '#06ffa5',
-      }});
-      wavesurfer.load('{audio_src}');
-      document.getElementById('playPause').onclick = function() {{
-        wavesurfer.playPause();
-      }};
-    </script>
-    '''
-    components.html(wavesurfer_html, height=200) 
+    try:
+        audio_bytes = st.session_state['audio_bytes']
+        # Double-check it's bytes
+        if hasattr(audio_bytes, '__iter__') and not isinstance(audio_bytes, bytes):
+            audio_bytes = b''.join(audio_bytes)
+            st.session_state['audio_bytes'] = audio_bytes
+        
+        audio_b64 = base64.b64encode(audio_bytes).decode()
+        audio_src = f"data:audio/mp3;base64,{audio_b64}"
+        wavesurfer_html = f'''
+        <div class="audio-glass-card">
+          <div id="waveform"></div>
+          <div style="display:flex;justify-content:center;margin-top:1em;">
+            <button id="playPause" style="background:linear-gradient(90deg,#ff006e,#8338ec);color:#fff;border:none;border-radius:16px;font-size:1.2rem;font-weight:700;padding:0.5em 2em;box-shadow:0 4px 24px #ff006e44;cursor:pointer;">Play/Pause</button>
+          </div>
+        </div>
+        <script src="https://unpkg.com/wavesurfer.js"></script>
+        <script>
+          var wavesurfer = WaveSurfer.create({{
+            container: '#waveform',
+            waveColor: '#8338ec',
+            progressColor: '#ff006e',
+            backgroundColor: 'rgba(26,26,34,0.7)',
+            barWidth: 3,
+            barRadius: 3,
+            height: 80,
+            responsive: true,
+            cursorColor: '#06ffa5',
+          }});
+          wavesurfer.load('{audio_src}');
+          document.getElementById('playPause').onclick = function() {{
+            wavesurfer.playPause();
+          }};
+        </script>
+        '''
+        components.html(wavesurfer_html, height=200)
+    except Exception as e:
+        st.error(f"Error creating audio player: {e}")
+        st.error("Audio generation failed. Please try again.") 
