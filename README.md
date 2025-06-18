@@ -48,5 +48,4 @@ The bot has predefined responses for:
 - "life story" - About Aileen's background and passion for AI
 - "superpower" - About connecting ideas and taking action
 - "grow" - About improving math, voice UX, and production systems
-- "misconception" - About being perceived as quiet
 - "push" - About learning by doing and building projects 
