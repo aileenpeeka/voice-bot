@@ -6,35 +6,41 @@ A voice-enabled AI chatbot that responds to questions with both text and speech 
 
 - Personal responses for specific questions about Aileen
 - Fallback to GPT-4 for general questions
-- Text-to-speech functionality
-- Web interface built with Gradio
+- Text-to-speech functionality (ElevenLabs)
+- Web interface built with Streamlit
+- No coding required for users
 
-## Setup
+## Setup (Local)
 
 1. **Install Dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-2. **Set Your OpenAI API Key**
-   - Get your API key from: https://platform.openai.com/account/api-keys
-   - Replace `"YOUR_OPENAI_API_KEY"` in `app.py` with your actual key:
-   ```python
-   openai.api_key = "sk-..."  # Your actual key
-   ```
+2. **Set Your API Keys**
+   - Create a file at `.streamlit/secrets.toml` with:
+     ```toml
+     ELEVENLABS_API_KEY = "your-elevenlabs-key"
+     VOICE_ID = "your-elevenlabs-voice-id"
+     API_KEY = "your-openrouter-key"
+     ```
 
 3. **Run the Application**
    ```bash
-   python app.py
+   streamlit run app_streamlit.py
    ```
+
+## One-Click Web Demo (Recommended)
+
+- Deploy this repo to [Streamlit Community Cloud](https://share.streamlit.io/)
+- Add your API keys in the app's "Secrets" section
+- Share your public app link with anyone—no install or coding needed!
 
 ## Usage
 
-Once the app is running, it will open a web interface in your browser. You can:
-
-- Ask about Aileen's life story, superpower, growth areas, misconceptions, or what pushes her
-- Ask any other question and get a GPT-4 response
-- The bot will speak the response out loud and display it on screen
+- Type your question or upload an audio file (WAV/MP3)
+- The bot will answer in Aileen's style, with both text and voice
+- All responses use your ElevenLabs voice
 
 ## Personal Responses
 
