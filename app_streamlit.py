@@ -6,7 +6,6 @@ import streamlit.components.v1 as components
 import base64
 
 # --- ElevenLabs API credentials ---
-# Set these in Streamlit Cloud secrets!
 ELEVENLABS_API_KEY = st.secrets["ELEVENLABS_API_KEY"]
 VOICE_ID = st.secrets["VOICE_ID"]
 API_KEY = st.secrets["API_KEY"]
@@ -331,9 +330,9 @@ def get_answer(prompt):
     elif "superpower" in lower:
         return "Connecting ideas fast and taking action. I don't get stuck in planning – I build."
     elif "grow" in lower:
-        return "Improving math for ML and building production systems."
+        return "Improving math for ML, voice UX, and building production systems."
     elif "misconception" in lower:
-        return "That I'm too quiet, I just observe and then contribute deeply."
+        return "That I'm too quiet — I just observe and then contribute deeply."
     elif "push" in lower:
         return "I throw myself into things I don't know and learn by doing. That's how I built my last few projects."
     else:
@@ -358,7 +357,12 @@ def get_answer(prompt):
                 }
             )
             result = response.json()
-            return result["choices"][0]["message"]["content"]
+            st.write(result)  # For debugging: show full API response
+            if "choices" in result and result["choices"]:
+                return result["choices"][0]["message"]["content"]
+            else:
+                st.error(f"API Error: {result}")
+                return f"API Error: {result}"
         except Exception as e:
             st.error(f"API Error: {e}")
             return f"Error: {e}"
