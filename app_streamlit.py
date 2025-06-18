@@ -4,12 +4,21 @@ import speech_recognition as sr
 import io
 import streamlit.components.v1 as components
 import base64
-from elevenlabs import generate, Voice, set_api_key
+import sys
+
+print("Python version:", sys.version)
+try:
+    from elevenlabs import generate, Voice, set_api_key
+    print("ElevenLabs import: SUCCESS")
+except Exception as e:
+    print("ElevenLabs import: FAIL", e)
+    raise
 
 # --- ElevenLabs API credentials ---
 ELEVENLABS_API_KEY = st.secrets["ELEVENLABS_API_KEY"]
 VOICE_ID = st.secrets["VOICE_ID"]
 API_KEY = st.secrets["API_KEY"]
+
 
 st.markdown(
     """
